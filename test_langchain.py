@@ -45,16 +45,26 @@ llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 # pdf_docs = pdf_loader.load()
 # pdf_docs
 
+path_list = [
+    "Source_data\quran_saheeh_international.txt",
+    "Source_data\quran_mohsin_khan.txt"
+]
 
-file_path = "Source_data\quran_draft.txt"
+full_content = ""
 
-# Open and read the text file content
-with open(file_path, 'r', encoding='utf-8') as file:
-    text_content = file.read()
+for path in path_list:
+        
+    # Open and read the text file content
+    with open(path, 'r', encoding='utf-8') as file:
+        text_content = file.read()
+        full_content += text_content
+        full_content += '\n\n'
 
+
+#%%
 # Create a single Document object (like in LangChain)
 from langchain.docstore.document import Document
-txt_docs = [Document(page_content=text_content)]
+txt_docs = [Document(page_content=full_content)]
 
 
 
@@ -124,11 +134,12 @@ history_aware_retriever = create_history_aware_retriever(
 qa_system_prompt = """You are an assistant for question-answering tasks. \
 Use the following pieces of retrieved context to answer the question. \
 Do not answer with your own memory. \
-Do not answer anything out of the context. \
+Do not answer knowledge out of the context to answer. \
 only use the context to answer the question. \
 if the question is not answered within the context, say I have not learnt this. \
 If you don't know the answer, just say that you don't know. \
-
+Elaborate the answer by making full use of context provided\
+Answer in atleast 5 sentences\
 
 {context}"""
 qa_prompt = ChatPromptTemplate.from_messages(
@@ -143,6 +154,8 @@ question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
 
+
+#%%
 ### Statefully manage chat history ###
 # store = {}
 
@@ -267,3 +280,9 @@ print('------------------------')
 # for x in list(dict(store)['abc123'])[0][1]:
 #   print(x)
 
+#%%
+# # TEST
+# a = rag_chain.invoke({'input':'Who is Allah', 'chat_history': []})
+# a
+
+print(full_content)

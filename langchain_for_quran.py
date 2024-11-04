@@ -8,8 +8,18 @@ import pandas as pd
 from word_list_dictionary import replacement_dict, additional_english_words, names, islamic_words, locations
 
 #%%
-pdf_path = ("C:\\Users\\nawai\\Downloads\\The-Quran-Saheeh-International.pdf")
-skip_pages = [2, 8, 9, 10, 712]
+translation = 'Saheeh'
+# translation = 'Muhsin'
+
+if translation == 'Saheeh':
+    pdf_path = ("Source_data\The-Quran-Saheeh-International.pdf")
+    skip_pages = [1,2,3,4,5,6,7, 8, 9, 10, 683, 684, 685, 686, 687, 688, 689, 690, 691, 692, 693, 
+                694, 695, 696, 697, 698, 699, 700, 701, 702, 703, 704, 705, 706, 707,
+                708, 709, 710, 711, 712]
+
+if translation == 'Muhsin':
+    pdf_path = ("Source_data\\Quran - Muhammad Muhsin Khan.pdf")
+    skip_pages = [1,2,3,4]
 
 
 # Download nltk words corpus
@@ -199,7 +209,7 @@ def count_occurrences(text, non_english_words):
     return word_counts_df
 
 result = count_occurrences(text, non_english_words)
-result
+result[0:20]
 #%%
 result['word'].tolist()
 # %%
@@ -207,8 +217,17 @@ len(non_english_words)
 # %%
 print(text)
 # %%
-with open('quran_draft.txt', 'w', encoding='utf-8') as file:
-        file.write(text)
+
+
+
+if translation == 'Saheeh':
+    with open('quran_saheeh_international.txt', 'w', encoding='utf-8') as file:
+            file.write(text)
+
+if translation == 'Muhsin':
+    with open('quran_mohsin_khan.txt', 'w', encoding='utf-8') as file:
+            file.write(text)
+
 
 
 
