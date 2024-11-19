@@ -2,10 +2,31 @@
 import streamlit as st
 import getpass
 import os
+import pandas as pd
+
 
 API_KEY = "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"
 os.environ["OPENAI_API_KEY"] = API_KEY
 
+splitter_type = 'recursive'
+store_type = 'chroma'
+retriever_type = 'similarity'
+demo = True
+
+max_context_column = 20
+
+#%%
+# splitter_type = 'recursive'
+# splitter_type = 'character'
+# splitter_type = 'sentence'
+
+# store_type = 'chroma'
+# store_type = 'faiss'
+
+# retriever_type = 'similarity'
+# retriever_type = 'mmr_lambda_high'
+# retriever_type = 'mmr_lambda_low'
+# retriever_type = 'similarity_score_threshold'
 
 #%% ############### UPDATING CHAT HISTORY WITH BASE MESSAGE HISTORY ##################
 
@@ -22,7 +43,24 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.document_loaders import PyPDFLoader 
 from langchain_core.output_parsers import StrOutputParser
+from langchain.docstore.document import Document
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
+import faiss
 
+
+def extract_context(row):
+    for x in range(0, len( row['ai_context'] ) ):
+        row[f"ai_context_{x+1}"] = row['ai_context'][x].page_content
+    return row
+
+def extract_ai_context_len(row):
+    row['ai_context_len'] = len(row['ai_context'] ) 
+    return row
+
+
+#%%
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
 path_list = [
@@ -30,6 +68,10 @@ path_list = [
     "Source_data\quran_mohsin_khan.txt"
 ]
 
+
+#%%
+
+# Extract text content from txt file
 full_content = ""
 
 for path in path_list:
@@ -40,35 +82,203 @@ for path in path_list:
         full_content += text_content
         full_content += '\n\n'
 
+if demo == True:
+    full_content = full_content[1500:3000]
+    print('Demo content applied')
 
 #%%
 # Create a single Document object (like in LangChain)
-from langchain.docstore.document import Document
 txt_docs = [Document(page_content=full_content)]
 
-
-
-#%%
 docs = txt_docs
 # docs = pdf_docs
 # docs = docs + pdf_docs
 
-#%%
-
-
-# Check if text_splitter, vectorstore, and retriever are in session_state
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-splits = text_splitter.split_documents(docs)
-
-# Create vectorstore and retriever only once
-vectorstore = Chroma.from_documents(documents=splits, 
-                                embedding=OpenAIEmbeddings(),
-                                collection_name= 'quran_vector',
-                                persist_directory='chroma'
-                                )
+#%% ######################## TEXT SPLITTER ######################## 
     
+# splitter_type = 'recursive'
+# splitter_type = 'character'
+# splitter_type = 'sentence'
+
+if splitter_type == 'recursive':
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, 
+                                                   chunk_overlap=200)
+    print("recursive splitter")
+
+# if splitter_type == 'recursive_doc':
+#     splits = text_splitter.create_documents([text_content])
+
+if splitter_type == 'character':
+    text_splitter = CharacterTextSplitter(
+        separator="\n\n",
+        chunk_size=2000,
+        chunk_overlap=200,
+        length_function=len,
+        is_separator_regex=False,)
+    print("character splitter")
+
+# if splitter_type == 'semantic':
+#     from langchain_experimental.text_splitter import SemanticChunker
+#     from langchain_openai.embeddings import OpenAIEmbeddings
+
+#     text_splitter = SemanticChunker(OpenAIEmbeddings())
+
+if splitter_type == 'sentence':
+    from langchain_text_splitters.sentence_transformers import SentenceTransformersTokenTextSplitter
+    text_splitter = SentenceTransformersTokenTextSplitter()
+    print("sentence splitter")
+
+
+splits = text_splitter.split_documents(docs)
+# splits
+
+#%% ######################## VECTOR STORE ######################## 
+# store_type = 'chroma'
+# store_type = 'faiss'
+
+if store_type == 'chroma': 
+    # Create chroma vectorstore 
+
+    if splitter_type == 'recursive':
+        vectorstore = Chroma.from_documents(documents=splits, 
+                                        embedding=OpenAIEmbeddings(),
+                                        collection_name= 'quran_vector',
+                                        persist_directory='chroma\\recursive_splitter'
+                                        )
+        print('Accessing chroma-recursive_splitter vectorstore')
+
+    if splitter_type == 'character':
+        vectorstore = Chroma.from_documents(documents=splits, 
+                                        embedding=OpenAIEmbeddings(),
+                                        collection_name= 'quran_vector',
+                                        persist_directory='chroma\\character_splitter'
+                                        )
+        print('Accessing chroma-character_splitter vectorstore')
+
+    if splitter_type == 'sentence':
+        vectorstore = Chroma.from_documents(documents=splits, 
+                                        embedding=OpenAIEmbeddings(),
+                                        collection_name= 'quran_vector',
+                                        persist_directory='chroma\\sentence_splitter'
+                                        )
+        print('Accessing chroma-sentence_splitter vectorstore')
+
+
+if store_type == 'faiss': 
+    # embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+
+    embeddings = OpenAIEmbeddings()
+    index = faiss.IndexFlatL2(len(embeddings.embed_query("hello")))
+
+    if splitter_type == 'recursive':
+        vector_path = 'faiss\\recursive'
+
+        try:
+            # Load the vector store from disk
+            vectorstore = FAISS.load_local(
+                folder_path=vector_path,
+                embeddings=embeddings,
+                allow_dangerous_deserialization=True)
+            print(f'Loaded Faiss vector store from {vector_path}')
+
+        except:
+            vectorstore = FAISS(
+                embedding_function=embeddings,
+                index=index,
+                docstore=InMemoryDocstore(),
+                index_to_docstore_id={})
+            vectorstore.add_documents(documents=splits)
+
+            # Save to disk
+            vectorstore.save_local(vector_path)
+            print(f'Saved Faiss vector store from {vector_path}')
+
+
+    if splitter_type == 'character':
+        vector_path = 'faiss\\character'
+
+        try:
+            # Load the vector store from disk
+            vectorstore = FAISS.load_local(
+                folder_path=vector_path,
+                embeddings=embeddings,
+                allow_dangerous_deserialization=True)
+            print(f'Loaded Faiss vector store from {vector_path}')
+            
+        except:
+            vectorstore = FAISS(
+                embedding_function=embeddings,
+                index=index,
+                docstore=InMemoryDocstore(),
+                index_to_docstore_id={})
+            vectorstore.add_documents(documents=splits)
+
+            # Save to disk
+            vectorstore.save_local(vector_path)
+            print(f'Saved Faiss vector store from {vector_path}')
+
+
+    if splitter_type == 'sentence':
+        vector_path = 'faiss\\sentence'
+
+        try:
+            # Load the vector store from disk
+            vectorstore = FAISS.load_local(
+                folder_path=vector_path,
+                embeddings=embeddings,
+                allow_dangerous_deserialization=True)
+            print(f'Loaded Faiss vector store from {vector_path}')
+        
+        except:
+            vectorstore = FAISS(
+                embedding_function=embeddings,
+                index=index,
+                docstore=InMemoryDocstore(),
+                index_to_docstore_id={})
+            vectorstore.add_documents(documents=splits)
+            print(f'Saved Faiss vector store from {vector_path}')
+
+            # Save to disk
+            vectorstore.save_local(vector_path)
+
+ 
+#%%
+# retriever_type = 'similarity'
+retriever_type = 'mmr_lambda_high'
+# retriever_type = 'mmr_lambda_low'
+# retriever_type = 'similarity_score_threshold'
+
+
+
+if retriever_type == 'similarity':
+    retriever = vectorstore.as_retriever(
+        search_kwargs={"k": 8, "fetch_k": 20})
+    print("retriever_type == similarity")
+
+
+if retriever_type == 'mmr_lambda_high':
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.8})
+    print("retriever_type == mmr_lambda_high")
+
+if retriever_type == 'mmr_lambda_low':
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.2})
+    print("retriever_type == mmr_lambda_low")
+
+if retriever_type == 'similarity_score_threshold':
+    retriever = vectorstore.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs={'score_threshold': 0.8})
+    print("retriever_type == similarity_score_threshold")
+
+#%% ######################## RETRIEVER ######################## 
+
+# if retriever_type == 'similarity'
 # Save retriever in session state
-retriever = vectorstore.as_retriever()
+# retriever = vectorstore.as_retriever()
 
 
 #%%
@@ -263,16 +473,16 @@ question_list = [
     "Narrate story of yajuj and Majuj",
     "What is Tawbah",
     "What are the name of Ibrahim's sons",
-    "What is the concept of Tawhid (oneness of God) in the Quran, and how does it emphasize the relationship between Allah and His creation"
-    "Can you explain the story of Prophet Yusuf (Joseph) in the Quran and the lessons it teaches about patience, forgiveness, and trust in Allah?"
-    "What are the rights and responsibilities between spouses as described in the Quran?"
-    "How does the Quran describe the purpose of human life and the concept of accountability in the Hereafter?"
-    "What does the Quran say about compassion and justice when dealing with others, even those who may oppose you?"
-    "Can you summarize the teachings of the Quran on charity (Zakat) and helping those in need?" 
-    "What are the Quranic guidelines on the treatment of orphans and the vulnerable in society?"
-    "How does the Quran address the concept of free will and predestination (Qadar), and what balance does it strike between them?"
-    "What guidance does the Quran provide about dealing with hardships and challenges in life?"
-    "What are the signs of Allah’s creation mentioned in the Quran, and how do these encourage reflection and understanding?"
+    "What is the concept of Tawhid (oneness of God) in the Quran, and how does it emphasize the relationship between Allah and His creation",
+    "Can you explain the story of Prophet Yusuf (Joseph) in the Quran and the lessons it teaches about patience, forgiveness, and trust in Allah?",
+    "What are the rights and responsibilities between spouses as described in the Quran?",
+    "How does the Quran describe the purpose of human life and the concept of accountability in the Hereafter?",
+    "What does the Quran say about compassion and justice when dealing with others, even those who may oppose you?",
+    "Can you summarize the teachings of the Quran on charity (Zakat) and helping those in need?" ,
+    "What are the Quranic guidelines on the treatment of orphans and the vulnerable in society?",
+    "How does the Quran address the concept of free will and predestination (Qadar), and what balance does it strike between them?",
+    "What guidance does the Quran provide about dealing with hardships and challenges in life?",
+    "What are the signs of Allah’s creation mentioned in the Quran, and how do these encourage reflection and understanding?",
     "Who are some of the main prophets mentioned in the Quran, and what is their role?",
     "What does the Quran say about being kind to parents?",
     "How does the Quran describe the creation of the world?",
@@ -285,23 +495,74 @@ question_list = [
     "What story does the Quran tell about Prophet Musa (Moses) and Pharaoh?",
                  ]
 
-prompt = question_list[13]
+if demo == True:
+    question_list = [
+        "Who is Allah",
+        "Who is Muhammad",
+        "What story does the Quran tell about Prophet Musa (Moses) and Pharaoh?",
+                    ]
+    print('Demo list applied')
+# prompt = question_list[13]
 
-
-
-ai_input, ai_answer, ai_context, ai_chat_history = get_ai_answer(prompt, return_context=True)
-ai_response_list = [ai_input, ai_answer, ai_context, ai_chat_history]
+all_question_answer_list = []
 #%%
-ai_response_list
+for prompt in question_list:
+    ai_input, ai_answer, ai_context, ai_chat_history = get_ai_answer(prompt, return_context=True)
+    # ai_response_list = [ai_input, ai_answer, ai_context, ai_chat_history]
+    # ai_response_list
 
+    # Contextualise the question
+    # question = 'What is Tawbah'
+    chain = (contextualize_q_prompt | llm | StrOutputParser())
+    contextualize_question = chain.invoke({"input": prompt, "chat_history": tuple(store['abc123'])[0][1]})
+    contextualize_question
+
+    # # Get direct context
+    # direct_context = history_aware_retriever.invoke({'input': prompt})
+
+    result_list = [splitter_type, store_type, retriever_type, 
+                    ai_input, ai_answer, ai_chat_history,
+                    ai_context, 
+                    contextualize_question
+                    # ,direct_context
+                    ]
+
+    all_question_answer_list.append(result_list)
 #%%
-# question = 'What is Tawbah'
-chain = (contextualize_q_prompt | llm | StrOutputParser())
-contextualize_question = chain.invoke({"input": prompt, "chat_history": tuple(store['abc123'])[0][1]})
-contextualize_question
+df = pd.DataFrame(all_question_answer_list)
+df.columns = ['splitter_type', 'store_type', 'retriever_type', 
+                    'ai_input', 'ai_answer', 'ai_chat_history',
+                    'ai_context', 'contextualize_question'
+                    # ,'direct_context'
+                    ]
 
-#%%
-# Get direct context
-direct_context = history_aware_retriever.invoke({'input': prompt})
 
-print(full_content)
+# %%
+
+
+# Extract number of context provided for each answer in column 'ai_context_len' 
+df = df.apply(extract_ai_context_len, axis=1)
+
+# Create context columns
+if max_context_column >= df['ai_context_len'].max():
+    # # Create columns
+    for x in range(1, max_context_column+1):
+        df[f"ai_context_{x}"] = None
+
+else:
+    max_context_column = df['ai_context_len'].max()
+    for x in range(1, max_context_column+1):
+        df[f"ai_context_{x}"] = None
+
+
+# Fill the context column with only the context text
+df = df.apply(extract_context, axis=1)
+
+# Change dtype to string for ease in saving
+df['ai_chat_history'] = df['ai_chat_history'].astype(str)
+
+# Remove ai_context column
+df.drop('ai_context', axis=1, inplace=True)
+
+# Save df as parquet
+df.to_parquet("eval_result\\" + splitter_type + '_' + store_type + '_' + retriever_type + ".parquet")
