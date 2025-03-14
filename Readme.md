@@ -1,38 +1,43 @@
-Quran-Based RAG System
-
-#Overview
-
-This project is a Retrieval-Augmented Generation (RAG) system designed to provide context-aware responses to queries related to the Quran. The primary goal is to ensure accuracy in Quranic references and prevent AI models from misquoting verses, a common issue observed in general-purpose LLMs.
+# Quran-Based RAG System
 
 
-Features
+## Overview
 
-Accurate Quranic Responses: Ensures Quran-related queries are answered with proper context.
+This project is a **Retrieval-Augmented Generation (RAG) system** designed to provide **context-aware responses** to queries related to the Quran. The primary goal is to ensure accuracy in Quranic references and prevent AI models from misquoting verses, a common issue observed in general-purpose LLMs.
 
-Prevents Misinformation: If a question is outside the scope of the Quran, the system responds with "I have not learned this."
 
-Powered by LLMs & Embeddings: Utilizes ChatGPT API (for now) for generating responses and embeddings.
+## Features
 
-User-Friendly Interface: Built using Streamlit for an interactive experience.
+- **Accurate Quranic Responses:** Ensures Quran-related queries are answered with proper context.
 
-Modular & Extendable: Designed with Python and LangChain, making it adaptable for future improvements.
+- **Prevents Misinformation:** If a question is outside the scope of the Quran, the system responds with "I have not learned this."
 
-Tech Stack
+- **Powered by LLMs & Embeddings:** Utilizes ChatGPT API (for now) for generating responses and embeddings.
 
-Backend: Python, LangChain
+- **User-Friendly Interface:** Built using Streamlit for an interactive experience.
 
-Frontend: Streamlit
+- **Modular & Extendable:** Designed with Python and LangChain, making it adaptable for future improvements.
 
-LLM & Embeddings: ChatGPT API (to be replaced with Ollama LLMs in future versions)
 
-Vector Database: FAISS (or similar for optimized retrieval)
+## Tech Stack
 
-How It Works
+- **Backend:** Python, LangChain
 
-User Input: The system takes a question related to the Quran.
+- **Frontend:** Streamlit
 
-Context Retrieval: Retrieves relevant Quranic passages using embeddings.
+- **LLM & Embeddings:** ChatGPT API (to be replaced with Ollama LLMs in future versions)
 
-LLM Processing: The model analyzes the query along with the retrieved context.
+- **Vector Database**: FAISS (or similar for optimized retrieval)
 
-Response Generation: If the query is Quran-related, an appropriate answer is provided; otherwise, the system returns "I have not learned this."
+
+## How It Works
+
+- **User Input:** The system takes a question related to the Quran.
+
+- **Context Retrieval:** Retrieves relevant Quranic passages using embeddings.
+
+- **LLM Processing:** The model analyzes the query along with the retrieved context.
+
+- **Response Generation:** If the query is Quran-related, an appropriate answer is provided; otherwise, the system returns "I have not learnt this."
+
+
