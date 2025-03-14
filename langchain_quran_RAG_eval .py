@@ -287,29 +287,29 @@ if store_type == 'faiss':
 
 
 
-# if retriever_type == 'similarity':
-#     retriever = vectorstore.as_retriever(
-#         search_kwargs={"k": 8, "fetch_k": 20})
-#     print("retriever_type == similarity")
+if retriever_type == 'similarity':
+    retriever = vectorstore.as_retriever(
+        search_kwargs={"k": 8, "fetch_k": 20})
+    print("retriever_type == similarity")
 
 
-# if retriever_type == 'mmr_lambda_high':
-#     retriever = vectorstore.as_retriever(
-#         search_type="mmr",
-#         search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.8})
-#     print("retriever_type == mmr_lambda_high")
+if retriever_type == 'mmr_lambda_high':
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.8})
+    print("retriever_type == mmr_lambda_high")
 
-# if retriever_type == 'mmr_lambda_low':
-#     retriever = vectorstore.as_retriever(
-#         search_type="mmr",
-#         search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.2})
-#     print("retriever_type == mmr_lambda_low")
+if retriever_type == 'mmr_lambda_low':
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.2})
+    print("retriever_type == mmr_lambda_low")
 
-# if retriever_type == 'similarity_score_threshold':
-#     retriever = vectorstore.as_retriever(
-#         search_type="similarity_score_threshold",
-#         search_kwargs={'score_threshold': 0.8})
-#     print("retriever_type == similarity_score_threshold")
+if retriever_type == 'similarity_score_threshold':
+    retriever = vectorstore.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs={'score_threshold': 0.8})
+    print("retriever_type == similarity_score_threshold")
 
 # #%% ######################## RETRIEVER ######################## 
 
@@ -320,47 +320,47 @@ if store_type == 'faiss':
 
 # #%%
 
-# ### Contextualize question ###
-# contextualize_q_system_prompt = """Given a chat history and the latest user question \
-# which might reference context in the chat history, formulate a standalone question \
-# which can be understood without the chat history. Do NOT answer the question, \
-# just reformulate it if needed and otherwise return it as is."""
-# contextualize_q_prompt = ChatPromptTemplate.from_messages(
-#     [
-#         ("system", contextualize_q_system_prompt),
-#         MessagesPlaceholder("chat_history"),
-#         ("human", "{input}"),
-#     ]
-# )
-# history_aware_retriever = create_history_aware_retriever(
-#     llm, retriever, contextualize_q_prompt
-# )
+### Contextualize question ###
+contextualize_q_system_prompt = """Given a chat history and the latest user question \
+which might reference context in the chat history, formulate a standalone question \
+which can be understood without the chat history. Do NOT answer the question, \
+just reformulate it if needed and otherwise return it as is."""
+contextualize_q_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", contextualize_q_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
+)
+history_aware_retriever = create_history_aware_retriever(
+    llm, retriever, contextualize_q_prompt
+)
 
-# # Use three sentences maximum and keep the answer concise.\
-# # Answer concisely until asked to elaborate.\
+# Use three sentences maximum and keep the answer concise.\
+# Answer concisely until asked to elaborate.\
 
-# ### Answer question ###
-# qa_system_prompt = """You are an assistant for question-answering tasks. \
-# Use the following pieces of retrieved context to answer the question. \
-# Do not answer with your own memory. \
-# Do not use out of the context knowledge to answer. \
-# only use the context to answer the question. \
-# if the question is not answered within the context, say I have not learnt this. \
-# If you don't know the answer, just say that you don't know. \
-# Elaborate the answer by making full use of context provided\
-# Answer in atleast 5 sentences\
+### Answer question ###
+qa_system_prompt = """You are an assistant for question-answering tasks. \
+Use the following pieces of retrieved context to answer the question. \
+Do not answer with your own memory. \
+Do not use out of the context knowledge to answer. \
+only use the context to answer the question. \
+if the question is not answered within the context, say I have not learnt this. \
+If you don't know the answer, just say that you don't know. \
+Elaborate the answer by making full use of context provided\
+Answer in atleast 5 sentences\
 
-# {context}"""
-# qa_prompt = ChatPromptTemplate.from_messages(
-#     [
-#         ("system", qa_system_prompt),
-#         MessagesPlaceholder("chat_history"),
-#         ("human", "{input}"),
-#     ]
-# )
-# question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+{context}"""
+qa_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", qa_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
+)
+question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
-# rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
 
 

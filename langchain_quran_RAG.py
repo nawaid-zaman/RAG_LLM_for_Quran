@@ -139,7 +139,7 @@ only use the context to answer the question. \
 if the question is not answered within the context, say I have not learnt this. \
 If you don't know the answer, just say that you don't know. \
 Elaborate the answer by making full use of context provided\
-Answer in atleast 5 sentences\
+Answer in detail\
 
 {context}"""
 qa_prompt = ChatPromptTemplate.from_messages(
@@ -216,7 +216,7 @@ def get_ai_answer(prompt, return_context=False):
 
 #%%
 
-st.title("LLM with RAG FOR QURAN")
+st.title("RAG LLM FOR QURAN")
 
 # Add a reset button to restart the session
 if st.sidebar.button("Restart Session"):
@@ -254,14 +254,17 @@ if prompt := st.chat_input("What is up?"):
     else:
         ai_answer = get_ai_answer(prompt)
 
-    response = f"ChatGPT: {ai_answer}"
+    response = f"QuranLLM: {ai_answer}"
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(response)
     # Add assistant response to chat history
     if return_context == True:
         with st.chat_message("AI"):
-            st.markdown(ai_context)
+            ai_context_list = str(ai_context[0])
+            ai_context_list = ai_context_list.replace("page_content=", "Context: \n")
+            # st.markdown(ai_context)
+            st.markdown(ai_context_list)
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 #%%
@@ -285,4 +288,4 @@ print('------------------------')
 # a = rag_chain.invoke({'input':'Who is Allah', 'chat_history': []})
 # a
 
-print(full_content)
+# print(full_content)
