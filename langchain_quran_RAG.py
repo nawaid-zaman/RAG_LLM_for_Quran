@@ -3,7 +3,8 @@ import streamlit as st
 import getpass
 import os
 
-API_KEY = "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"
+# Add your ChatGPT API below
+API_KEY = ""
 os.environ["OPENAI_API_KEY"] = API_KEY
 
 
